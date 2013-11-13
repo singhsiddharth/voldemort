@@ -383,17 +383,21 @@ public class ServerTestUtils {
      * @return List of zones
      */
     public static List<Zone> getZones(int numberOfZones) {
+        int[] zonesSid = new int[3];
+        zonesSid[0] = 1;
+        zonesSid[1] = 4;
+        zonesSid[2] = 6;
         List<Zone> zones = Lists.newArrayList();
         for(int i = 0; i < numberOfZones; i++) {
             LinkedList<Integer> proximityList = Lists.newLinkedList();
-            int zoneId = i + 1;
+            int zoneId = zonesSid[i] + 1;
             for(int j = 0; j < numberOfZones; j++) {
-                if(zoneId % numberOfZones != i) {
+                if(zoneId % numberOfZones != zonesSid[i]) {
                     proximityList.add(zoneId % numberOfZones);
                 }
                 zoneId++;
             }
-            zones.add(new Zone(i, proximityList));
+            zones.add(new Zone(zonesSid[i], proximityList));
         }
         return zones;
     }
@@ -605,6 +609,11 @@ public class ServerTestUtils {
         // Generate nodes
         List<Node> nodes = new ArrayList<Node>();
         int offset = 0;
+        int[] zonesSid = new int[3];
+        zonesSid[0] = 1;
+        zonesSid[1] = 4;
+        zonesSid[2] = 6;
+
         for(int zoneId = 0; zoneId < numberOfZones; zoneId++) {
             for(int nodeId: nodeIdsPerZone[zoneId]) {
                 List<Integer> partitions = new ArrayList<Integer>(partitionMap[nodeId].length);
@@ -616,7 +625,7 @@ public class ServerTestUtils {
                                    ports[nodeId * 3],
                                    ports[nodeId * 3 + 1],
                                    ports[nodeId * 3 + 2],
-                                   zoneId,
+                                   zonesSid[zoneId],
                                    partitions));
                 offset++;
             }

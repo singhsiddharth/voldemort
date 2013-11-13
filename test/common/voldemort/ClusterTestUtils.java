@@ -47,8 +47,8 @@ public class ClusterTestUtils {
 
         List<StoreDefinition> storeDefs = new LinkedList<StoreDefinition>();
         HashMap<Integer, Integer> zoneRep111 = new HashMap<Integer, Integer>();
-        zoneRep111.put(0, 1);
         zoneRep111.put(1, 1);
+        zoneRep111.put(4, 1);
         StoreDefinition storeDef111 = new StoreDefinitionBuilder().setName("ZZ111")
                                                                   .setType(storageType)
                                                                   .setRoutingPolicy(RoutingTier.CLIENT)
@@ -70,8 +70,8 @@ public class ClusterTestUtils {
 
         List<StoreDefinition> storeDefs = new LinkedList<StoreDefinition>();
         HashMap<Integer, Integer> zoneRep211 = new HashMap<Integer, Integer>();
-        zoneRep211.put(0, 2);
         zoneRep211.put(1, 2);
+        zoneRep211.put(4, 2);
         StoreDefinition storeDef211 = new StoreDefinitionBuilder().setName("ZZ211")
                                                                   .setType(storageType)
                                                                   .setRoutingPolicy(RoutingTier.CLIENT)
@@ -93,8 +93,8 @@ public class ClusterTestUtils {
 
         List<StoreDefinition> storeDefs = new LinkedList<StoreDefinition>();
         HashMap<Integer, Integer> zoneRep322 = new HashMap<Integer, Integer>();
-        zoneRep322.put(0, 3);
         zoneRep322.put(1, 3);
+        zoneRep322.put(4, 3);
         StoreDefinition storeDef322 = new StoreDefinitionBuilder().setName("ZZ322")
                                                                   .setType(storageType)
                                                                   .setRoutingPolicy(RoutingTier.CLIENT)
@@ -160,9 +160,9 @@ public class ClusterTestUtils {
 
         List<StoreDefinition> storeDefs = new LinkedList<StoreDefinition>();
         HashMap<Integer, Integer> zoneRep111 = new HashMap<Integer, Integer>();
-        zoneRep111.put(0, 1);
         zoneRep111.put(1, 1);
-        zoneRep111.put(2, 1);
+        zoneRep111.put(4, 1);
+        zoneRep111.put(6, 1);
         StoreDefinition storeDef111 = new StoreDefinitionBuilder().setName("ZZ111")
                                                                   .setType(storageType)
                                                                   .setRoutingPolicy(RoutingTier.CLIENT)
@@ -184,9 +184,9 @@ public class ClusterTestUtils {
 
         List<StoreDefinition> storeDefs = new LinkedList<StoreDefinition>();
         HashMap<Integer, Integer> zoneRep211 = new HashMap<Integer, Integer>();
-        zoneRep211.put(0, 2);
         zoneRep211.put(1, 2);
-        zoneRep211.put(2, 2);
+        zoneRep211.put(4, 2);
+        zoneRep211.put(6, 2);
         StoreDefinition storeDef211 = new StoreDefinitionBuilder().setName("ZZ211")
                                                                   .setType(storageType)
                                                                   .setRoutingPolicy(RoutingTier.CLIENT)
@@ -208,9 +208,9 @@ public class ClusterTestUtils {
 
         List<StoreDefinition> storeDefs = new LinkedList<StoreDefinition>();
         HashMap<Integer, Integer> zoneRep322 = new HashMap<Integer, Integer>();
-        zoneRep322.put(0, 3);
         zoneRep322.put(1, 3);
-        zoneRep322.put(2, 3);
+        zoneRep322.put(4, 3);
+        zoneRep322.put(6, 3);
         StoreDefinition storeDef322 = new StoreDefinitionBuilder().setName("ZZ322")
                                                                   .setType(storageType)
                                                                   .setRoutingPolicy(RoutingTier.CLIENT)
@@ -948,8 +948,7 @@ public class ClusterTestUtils {
         return new RebalanceKit(rebalanceController, rebalancePlan);
     }
 
-    public static RebalanceKit getRebalanceKit(String bootstrapUrl,
-                                               Cluster finalCluster) {
+    public static RebalanceKit getRebalanceKit(String bootstrapUrl, Cluster finalCluster) {
         return getRebalanceKit(bootstrapUrl,
                                RebalanceController.MAX_PARALLEL_REBALANCING,
                                REBALANCE_CONTROLLER_TEST_PROXY_PAUSE_IN_SECONDS,

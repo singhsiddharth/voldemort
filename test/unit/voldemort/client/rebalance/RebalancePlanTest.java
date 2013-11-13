@@ -116,10 +116,10 @@ public class RebalancePlanTest {
         assertEquals(rebalancePlan.getPartitionStoresMovedXZone(), 0);
 
         MoveMap zoneMoves = rebalancePlan.getZoneMoveMap();
-        assertTrue(zoneMoves.get(0, 0) > 0);
-        assertTrue(zoneMoves.get(0, 1) == 0);
-        assertTrue(zoneMoves.get(1, 0) == 0);
         assertTrue(zoneMoves.get(1, 1) > 0);
+        assertTrue(zoneMoves.get(1, 4) == 0);
+        assertTrue(zoneMoves.get(4, 1) == 0);
+        assertTrue(zoneMoves.get(4, 4) > 0);
 
         // Three zones
         rebalancePlan = ClusterTestUtils.makePlan(zzzCurrent, zzzStores, zzzShuffle, zzzStores);
@@ -129,15 +129,15 @@ public class RebalancePlanTest {
         assertEquals(rebalancePlan.getPartitionStoresMovedXZone(), 0);
 
         zoneMoves = rebalancePlan.getZoneMoveMap();
-        assertTrue(zoneMoves.get(0, 0) > 0);
-        assertTrue(zoneMoves.get(0, 1) == 0);
-        assertTrue(zoneMoves.get(0, 2) == 0);
-        assertTrue(zoneMoves.get(1, 0) == 0);
         assertTrue(zoneMoves.get(1, 1) > 0);
-        assertTrue(zoneMoves.get(1, 2) == 0);
-        assertTrue(zoneMoves.get(2, 0) == 0);
-        assertTrue(zoneMoves.get(2, 1) == 0);
-        assertTrue(zoneMoves.get(2, 2) > 0);
+        assertTrue(zoneMoves.get(1, 4) == 0);
+        assertTrue(zoneMoves.get(1, 6) == 0);
+        assertTrue(zoneMoves.get(4, 1) == 0);
+        assertTrue(zoneMoves.get(4, 4) > 0);
+        assertTrue(zoneMoves.get(4, 6) == 0);
+        assertTrue(zoneMoves.get(6, 1) == 0);
+        assertTrue(zoneMoves.get(6, 4) == 0);
+        assertTrue(zoneMoves.get(6, 6) > 0);
     }
 
     @Test
