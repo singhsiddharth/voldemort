@@ -174,6 +174,10 @@ public class AdminServiceRequestHandler implements RequestHandler {
                 ProtoUtils.writeMessage(outputStream,
                                         handleUpdateMetadata(request.getUpdateMetadata()));
                 break;
+            case UPDATE_METADATA_PAIR:
+                ProtoUtils.writeMessage(outputStream,
+                                        handleUpdateMetadataPair(request.getUpdateMetadataPair()));
+                break;
             case DELETE_PARTITION_ENTRIES:
                 ProtoUtils.writeMessage(outputStream,
                                         handleDeletePartitionEntries(request.getDeletePartitionEntries()));
@@ -1223,6 +1227,36 @@ public class AdminServiceRequestHandler implements RequestHandler {
             logger.error("handleUpdateMetadata failed for request(" + request.toString() + ")", e);
         }
 
+        return response.build();
+    }
+    
+    public VAdminProto.UpdateMetadataPairResponse handleUpdateMetadataPair(VAdminProto.UpdateMetadataPairRequest request) {
+        VAdminProto.UpdateMetadataPairResponse.Builder response = VAdminProto.UpdateMetadataPairResponse.newBuilder();
+
+        try {
+            ByteArray clusterKey = ProtoUtils.decodeBytes(request.getClusterKey());
+            ByteArray storesKey = ProtoUtils.decodeBytes(request.getStoresKey());
+            String clusterKeyString = ByteUtils.getString(clusterKey.get(), "UTF-8");
+            String storesKeyString = ByteUtils.getString(storesKey.get(), "UTF-8");
+            
+            if (MetadataStore.METADATA_KEYS.contains(clusterKeyString) && MetadataStore.METADATA_KEYS.contains(storesKeyString)) {
+                
+                Versioned<byte[]> clusterVersionedValue = ProtoUtils.decodeVersioned(request.getClusterValue());
+                Versioned<byte[]> storesVersionedValue = ProtoUtils.decodeVersioned(request.getStoresValue());
+                
+                logger.info("Updating metadata for keys '" + clusterKeyString + "'" +  " and '" + storesKeyString + "'");
+                
+                metadataStore.writeLock.lock();
+                metadataStore.put(new ByteArray(ByteUtils.getBytes(storesKeyString, "UTF-8")), storesVersionedValue, null);
+                metadataStore.put(new ByteArray(ByteUtils.getBytes(clusterKeyString, "UTF-8")), clusterVersionedValue, null);
+                metadataStore.writeLock.unlock();
+                
+                logger.info("Successfully updated metadata for keys '" + clusterKeyString + "'" +  " and '" + storesKeyString + "'");
+            }
+        } catch(VoldemortException e) {
+            response.setError(ProtoUtils.encodeError(errorCodeMapper, e));
+            logger.error("handleUpdateMetadataPair failed for request(" + request.toString() + ")", e);
+        }
         return response.build();
     }
 

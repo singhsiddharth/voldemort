@@ -972,6 +972,63 @@ public class AdminClient {
             }
         }
 
+        public void updateRemoteMetadataPair(int remoteNodeId,
+                                             String clusterKey,
+                                             Versioned<String> clusterValue,
+                                             String storeKey,
+                                             Versioned<String> storeValue) {
+            ByteArray clusterKeyBytes = new ByteArray(ByteUtils.getBytes(clusterKey, "UTF-8"));
+            Versioned<byte[]> clusterValueBytes = new Versioned<byte[]>(ByteUtils.getBytes(clusterValue.getValue(),
+                                                                                           "UTF-8"),
+                                                                        clusterValue.getVersion());
+
+            ByteArray storeKeyBytes = new ByteArray(ByteUtils.getBytes(storeKey, "UTF-8"));
+            Versioned<byte[]> storesValueBytes = new Versioned<byte[]>(ByteUtils.getBytes(storeValue.getValue(),
+                                                                                          "UTF-8"),
+                                                                       storeValue.getVersion());
+
+            VAdminProto.VoldemortAdminRequest request = VAdminProto.VoldemortAdminRequest.newBuilder()
+                                                                                         .setType(VAdminProto.AdminRequestType.UPDATE_METADATA_PAIR)
+                                                                                         .setUpdateMetadataPair(VAdminProto.UpdateMetadataPairRequest.newBuilder()
+                                                                                                                                                     .setClusterKey(ByteString.copyFrom(clusterKeyBytes.get()))
+                                                                                                                                                     .setClusterValue(ProtoUtils.encodeVersioned(clusterValueBytes))
+                                                                                                                                                     .setStoresKey(ByteString.copyFrom(storeKeyBytes.get()))
+                                                                                                                                                     .setStoresValue((ProtoUtils.encodeVersioned(storesValueBytes)))
+                                                                                                                                                     .build())
+                                                                                         .build();
+            VAdminProto.UpdateMetadataResponse.Builder response = rpcOps.sendAndReceive(remoteNodeId,
+                                                                                        request,
+                                                                                        VAdminProto.UpdateMetadataResponse.newBuilder());
+            if (response.hasError())
+                helperOps.throwException(response.getError());
+        }
+
+        public void updateRemoteMetadataPair(List<Integer> remoteNodeIds,
+                                             String clusterKey,
+                                             Versioned<String> clusterValue,
+                                             String storesKey,
+                                             Versioned<String> storesValue) {
+            for (Integer currentNodeId: remoteNodeIds) {
+                System.out.println("Setting " + clusterKey + " and " + storesKey + " for "
+                                   + getAdminClientCluster().getNodeById(currentNodeId).getHost()
+                                   + ":"
+                                   + getAdminClientCluster().getNodeById(currentNodeId).getId());
+                updateRemoteMetadataPair(currentNodeId,
+                                         clusterKey,
+                                         clusterValue,
+                                         storesKey,
+                                         storesValue);
+            }
+
+            /*
+             * Assuming everything is fine, we now increment the metadata
+             * version for the cluster
+             */
+            if(clusterKey.equals(CLUSTER_VERSION_KEY)) {
+                metadataMgmtOps.updateMetadataversion(clusterKey);
+            }
+        }
+
         /**
          * Get the metadata on a remote node.
          * <p>

@@ -211,6 +211,20 @@ public class VoldemortAdminTool {
               .withRequiredArg()
               .describedAs("metadata-value")
               .ofType(String.class);
+        parser.accepts("set-metadata-pair",
+                       "Forceful setting of metadata pair [ " + MetadataStore.CLUSTER_KEY + " & "
+                               + MetadataStore.STORES_KEY + " ]")
+              .withRequiredArg()
+              .describedAs("metadata-keys-pair")
+              .withValuesSeparatedBy(',')
+              .ofType(String.class);
+        parser.accepts("set-metadata-value-pair",
+                       "The value for the set-metadata pair [ " + MetadataStore.CLUSTER_KEY + " & "
+                               + MetadataStore.STORES_KEY + " ]")
+              .withRequiredArg()
+              .describedAs("metadata-value-pair")
+              .withValuesSeparatedBy(',')
+              .ofType(String.class);
         parser.accepts("clear-rebalancing-metadata", "Remove the metadata related to rebalancing");
         parser.accepts("async",
                        "a) Get a list of async job ids [get] b) Stop async job ids [stop] ")
@@ -292,7 +306,7 @@ public class VoldemortAdminTool {
             if(!(missing.equals(ImmutableSet.of("node"))
                  && (options.has("add-stores") || options.has("delete-store")
                      || options.has("ro-metadata") || options.has("set-metadata")
-                     || options.has("get-metadata") || options.has("check-metadata"))
+                     || options.has("set-metadata-pair") || options.has("get-metadata") || options.has("check-metadata"))
                  || options.has("truncate") || options.has("clear-rebalancing-metadata")
                  || options.has("async") || options.has("native-backup") || options.has("rollback")
                  || options.has("verify-metadata-version") || options.has("reserve-memory") || options.has("purge-slops"))) {
@@ -396,6 +410,50 @@ public class VoldemortAdminTool {
                                  options.has("fetch-orphaned"));
             } else if(options.has("repair-job")) {
                 executeRepairJob(nodeId, adminClient);
+            } else if(options.has("set-metadata-pair")) {
+                List<String> metadataKeyPair = (List<String>) options.valuesOf("set-metadata-pair");
+                if (!options.has("set-metadata-value-pair")) {
+                    throw new VoldemortException("Missing set-metadata-value-pair");
+                } else {
+
+                    List<String> metadataValuePair = (List<String>) options.valuesOf("set-metadata-value-pair");
+
+                    if (metadataKeyPair.contains(MetadataStore.CLUSTER_KEY)) {
+
+                        String clusterXMLPath = metadataValuePair.get(metadataKeyPair.indexOf(MetadataStore.CLUSTER_KEY));
+                        String storesXMLPath = metadataValuePair.get(metadataKeyPair.indexOf(MetadataStore.STORES_KEY));
+
+                        if (!Utils.isReadableFile(clusterXMLPath))
+                            throw new VoldemortException("Cluster xml file path incorrect");
+                        
+                        ClusterMapper clusterMapper = new ClusterMapper();
+                        Cluster newCluster = clusterMapper.readCluster(new File(clusterXMLPath));
+
+                        if (!Utils.isReadableFile(storesXMLPath))
+                            throw new VoldemortException("Stores definition xml file path incorrect");
+                        
+                        StoreDefinitionsMapper storeDefsMapper = new StoreDefinitionsMapper();
+                        List<StoreDefinition> storeDefs = storeDefsMapper.readStoreList(new File(storesXMLPath));
+                        
+                        String AVRO_GENERIC_VERSIONED_TYPE_NAME = "avro-generic-versioned";
+                        for (StoreDefinition storeDef: storeDefs) {
+                            SerializerDefinition keySerDef = storeDef.getKeySerializer();
+                            SerializerDefinition valueSerDef = storeDef.getValueSerializer();
+                            if (keySerDef.getName().equals(AVRO_GENERIC_VERSIONED_TYPE_NAME)) {
+                                SchemaEvolutionValidator.checkSchemaCompatibility(keySerDef);
+                            }
+                            if (valueSerDef.getName().equals(AVRO_GENERIC_VERSIONED_TYPE_NAME)) {
+                                SchemaEvolutionValidator.checkSchemaCompatibility(valueSerDef);
+                            }
+                        }
+                        executeSetMetadataPair(nodeId,
+                                               adminClient,
+                                               MetadataStore.CLUSTER_KEY,
+                                               newCluster,
+                                               MetadataStore.STORES_KEY,
+                                               storeDefs);
+                    }
+                }
             } else if(options.has("set-metadata")) {
 
                 String metadataKey = (String) options.valueOf("set-metadata");
@@ -914,6 +972,52 @@ public class VoldemortAdminTool {
         } else {
             System.out.println("false");
         }
+    }
+
+    public static void executeSetMetadataPair(Integer nodeId,
+                                              AdminClient adminClient,
+                                              String clusterKey,
+                                              Object clusterValue,
+                                              String storesKey,
+                                              Object storesValue) {
+
+        List<Integer> nodeIds = Lists.newArrayList();
+        VectorClock updatedClusterVersion = null;
+        VectorClock updatedStoresVersion = null;
+        if (nodeId < 0) {
+            for (Node node: adminClient.getAdminClientCluster().getNodes()) {
+                nodeIds.add(node.getId());
+                if (updatedClusterVersion == null) {
+                    updatedClusterVersion = (VectorClock) adminClient.metadataMgmtOps
+                                                                     .getRemoteMetadata(node.getId(), clusterKey)
+                                                                     .getVersion();
+
+                    updatedStoresVersion = (VectorClock) adminClient.metadataMgmtOps
+                                                                    .getRemoteMetadata(node.getId(), storesKey)
+                                                                    .getVersion();
+                } else {
+                    updatedClusterVersion = updatedClusterVersion.merge((VectorClock) adminClient.metadataMgmtOps
+                                                                                                 .getRemoteMetadata(node.getId(), clusterKey)
+                                                                                                 .getVersion());
+
+                    updatedStoresVersion = updatedStoresVersion.merge((VectorClock) adminClient.metadataMgmtOps
+                                                                                               .getRemoteMetadata(node.getId(), storesKey)
+                                                                                               .getVersion());
+                }
+            }
+            updatedClusterVersion = updatedClusterVersion.incremented(nodeId, System.currentTimeMillis());
+            updatedStoresVersion = updatedStoresVersion.incremented(nodeId, System.currentTimeMillis());
+        } else {
+            updatedClusterVersion = ((VectorClock) adminClient.metadataMgmtOps.getRemoteMetadata(nodeId, clusterKey)
+                                                                              .getVersion())
+                                                                              .incremented(nodeId, System.currentTimeMillis());
+            nodeIds.add(nodeId);
+        }
+        adminClient.metadataMgmtOps.updateRemoteMetadataPair(nodeIds,
+                                                             clusterKey,
+                                                             Versioned.value(clusterValue.toString(), updatedClusterVersion),
+                                                             storesKey,
+                                                             Versioned.value(storesValue.toString(), updatedStoresVersion));
     }
 
     public static void executeSetMetadata(Integer nodeId,
