@@ -618,7 +618,10 @@ public class ClusterForkLiftTool implements Runnable {
         parser.accepts("mode",
                        "Determines if a thorough global resolution needs to be done, by comparing all replicas. [Default: "
                                + ForkLiftTaskMode.primary_resolution.toString()
-                               + " Fetch from primary alone ]");
+                               + " Fetch from primary alone ]")
+              .withOptionalArg()
+              .describedAs("mode")
+              .ofType(String.class);
 
         parser.accepts(OVERWRITE_OPTION, OVERWRITE_WARNING_MESSAGE)
               .withOptionalArg()
@@ -681,12 +684,15 @@ public class ClusterForkLiftTool implements Runnable {
 
         ForkLiftTaskMode mode;
         mode = ForkLiftTaskMode.primary_resolution;
+
         if(options.has("mode")) {
             mode = Utils.getEnumFromString(ForkLiftTaskMode.class, (String) options.valueOf("mode"));
             if(mode == null)
                 mode = ForkLiftTaskMode.primary_resolution;
 
         }
+
+        logger.info("Mode # " + mode);
 
         Boolean overwrite = false;
         if(options.has(OVERWRITE_OPTION)) {
