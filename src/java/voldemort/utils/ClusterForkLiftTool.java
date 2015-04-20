@@ -304,6 +304,7 @@ public class ClusterForkLiftTool implements Runnable {
                                                                                    null,
                                                                                    true);
                 List<Integer> nodeList = storeInstance.getReplicationNodeList(this.partitionId);
+                logger.info("Replicating nodes : " + nodeList);
                 while(keyItr.hasNext()) {
                     ByteArray keyToResolve = keyItr.next();
                     Map<Integer, QueryKeyResult> valuesMap = doReads(nodeList, keyToResolve.get());
@@ -321,6 +322,8 @@ public class ClusterForkLiftTool implements Runnable {
                         }
                         values.addAll(result.getValues());
                     }
+
+                    logger.info("Key : " + keyToResolve + "Values :" + values);
 
                     List<Versioned<byte[]>> resolvedVersions = resolver.resolveConflicts(values);
                     // after timestamp based resolving there should be only one
@@ -367,6 +370,7 @@ public class ClusterForkLiftTool implements Runnable {
                     nodeIdToKeyValues.put(nodeId, new QueryKeyResult(key, ve));
                 }
             }
+            logger.info("# of Values fetched" + nodeIdToKeyValues.size());
             return nodeIdToKeyValues;
         }
     }
