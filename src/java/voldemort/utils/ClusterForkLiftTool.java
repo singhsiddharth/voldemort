@@ -622,7 +622,6 @@ public class ClusterForkLiftTool implements Runnable {
               .withOptionalArg()
               .describedAs("mode")
               .ofType(String.class);
-
         parser.accepts(OVERWRITE_OPTION, OVERWRITE_WARNING_MESSAGE)
               .withOptionalArg()
               .describedAs("overwriteExistingValue")
@@ -631,6 +630,7 @@ public class ClusterForkLiftTool implements Runnable {
 
         return parser;
     }
+
 
     /**
      * @param args
@@ -682,14 +682,14 @@ public class ClusterForkLiftTool implements Runnable {
             progressOps = (Integer) options.valueOf("progress-period-ops");
         }
 
-        ForkLiftTaskMode mode;
-        mode = ForkLiftTaskMode.primary_resolution;
+        ForkLiftTaskMode mode = null;
+
+        logger.info("options mode" + options.valueOf("mode"));
 
         if(options.has("mode")) {
-            mode = Utils.getEnumFromString(ForkLiftTaskMode.class, (String) options.valueOf("mode"));
+            mode = ForkLiftTaskMode.valueOf((String) options.valueOf("mode"));
             if(mode == null)
                 mode = ForkLiftTaskMode.primary_resolution;
-
         }
 
         logger.info("Mode # " + mode);
